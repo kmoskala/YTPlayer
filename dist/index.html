@@ -1,0 +1,196 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700" rel=stylesheet>
+  <link rel=stylesheet href=https://use.fontawesome.com/releases/v5.7.1/css/all.css integrity=sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr crossorigin=anonymous>
+  <style>
+    body {
+      font-size: 24px;
+      font-family: 'Amatic SC', cursive;
+      overflow-x: hidden;
+    }
+    .main_container {
+      text-align: center;
+      margin: 50px auto;
+    }
+    form {
+      margin-bottom: 50px;
+    }
+    #player {
+    }
+    .button {
+      cursor: pointer;
+      margin: 15px auto;
+      background-color: black;
+      color: white;
+      padding: 15px;
+      width: 20%;
+    }
+    .lyer_container {
+      position: relative;
+      margin: auto;
+      height: 360px;
+      width: 640px;
+    }
+    #counter {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: #1b1e21;
+      opacity: 0.5;
+      color: white;
+      pointer-events:none;
+      display: none;
+    }
+    #counter span {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50%);
+      color: white;
+      font-size: 78px;
+      font-weight: bold;
+    }
+    .title {
+      color: #eb0165;
+      font-size: 70px;
+      text-align: center;
+      margin: 50px auto;
+      font-weight: bold;
+    }
+    .instruction {
+      color: #000000;
+      font-size: 35px;
+      text-align: center;
+      margin: 50px 100px;
+    }
+    #id_value {
+      padding: 15px;
+    }
+  </style>
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+  <div class=" main_container" >
+    <div class="title">Odtwarzacz Youtube</div>
+    <div class="instruction">
+      Prostą strona gdzie będzie zawarty formularz z jednym polem oraz przycisk do wysłania formularza.
+  
+      W pole tekstowe można wpisać ID filmu z YouTube. Następnie po naciśnięciu przycisku wysłania formularza (bez przeładowania strony!) osadzany jest na stronie player YT z tym filmem. Automatycznie startuje odtwarzanie filmu.
+  
+      Na 10 sekund przed końcem filmu, nad filmem (przykład poniżej) powinna pojawić się warstwa, na której będzie odliczanie ile sekund pozostało do końca filmu. Ta warstwa nie może blokować możliwości przeskakiwania na inną część filmu (można swobodnie klikać w progress bar).
+  
+      W każdym momencie można wczytać inny film (podać inne ID filmu).
+
+    </div>
+    <form id="ytId">
+      <input type="text" id="id_value">
+      <div class="button" onclick="playYt()">Otwórz</div>
+    </form>
+  <div class="lyer_container">
+    <div id="player" style="display: none"></div>
+  
+    <div id="counter">
+      <span id="counter2">10</span></div>
+  </div>
+  
+  
+  
+  </div>
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+  <script src="js/plugins.js"></script>
+  <script>
+    var id_value;
+    var player;
+    var timer = 9;
+    
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+
+
+    function onYouTubeIframeAPIReady() { //parametry iframe bez podanego id yt
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: '',
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+    function onPlayerReady(event) {//poczatkowo odtwarzacz jest nie odtwarzany
+      event.target.stopVideo();
+      
+    }
+
+    let done = false;
+    function onPlayerStateChange(event) {
+      console.log(event.data);
+      let myInterval;
+      if (event.data == YT.PlayerState.PLAYING && !done) {
+        done = true;
+        myInterval = setInterval(function () {
+        if(Math.floor(player.getCurrentTime()) >= Math.floor(player.getDuration())-10 ) {
+          
+            document.getElementById("counter").style.display = "block";
+            let duraf = Math.floor(player.getDuration()) - Math.floor(player.getCurrentTime());
+            document.getElementById("counter2").innerHTML = duraf;
+            timer = timer - 1;
+          }
+          },1000);
+      } else if(event.data == YT.PlayerState.ENDED || event.data == YT.PlayerState.CUED || event.data == YT.PlayerState.PAUSED ) {
+        clearInterval(myInterval);
+        document.getElementById("counter").style.display = "none";
+      }
+    }
+    function stopVideo() {
+      player.stopVideo();
+    }
+    
+
+    function playYt() {
+      timer = 10;
+      document.getElementById("counter").style.display="none";
+      id_value = document.getElementById('id_value').value; //pobranie wartosci z inputa
+      if(id_value.length!== 11) { //sprawdzenie dlugosci id (id na yt ma 11 znakow)
+        alert("Zla dlugosc id");
+      } else {
+        if(document.getElementById("player").offsetHeight > 0) { //jesli odtwarzacz jest juz pokazany to przeladuj wideo
+          player.loadVideoById( id_value, 0, "default");
+        } else {
+          document.getElementById("player").style.display="block"; //pokaz odtwarzac
+          player.loadVideoById( id_value, 0, "default");//odtwarzaj wideo o id
+          player.playVideo();
+          
+        }
+      }
+    }
+    
+  </script>
+  <script src="js/main.js"></script>
+
+  <!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
+  <script>
+    window.ga = function () { ga.q.push(arguments) }; ga.q = []; ga.l = +new Date;
+    ga('create', 'UA-XXXXX-Y', 'auto'); ga('send', 'pageview')
+  </script>
+  <script src="https://www.google-analytics.com/analytics.js" async defer></script>
+</body>
+
+</html>
